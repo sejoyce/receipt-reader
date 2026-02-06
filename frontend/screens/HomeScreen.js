@@ -11,10 +11,10 @@ export default function HomeScreen() {
 
   try {
     // Prefer local config if it exists
-    Config = require('../local.config').default;
+    Config = require('../config/local.config.js').default;
   } catch (e) {
     // Fallback to committed config
-    Config = require('../config').default;
+    Config = require('../config/config.js').default;
   }
 
   useEffect(() => {
