@@ -7,6 +7,16 @@ export default function HomeScreen() {
   const [resultText, setResultText] = useState('');
   const [loading, setLoading] = useState(false);
 
+  let Config;
+
+  try {
+    // Prefer local config if it exists
+    Config = require('../local.config').default;
+  } catch (e) {
+    // Fallback to committed config
+    Config = require('../config').default;
+  }
+
   useEffect(() => {
   (async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -41,7 +51,7 @@ export default function HomeScreen() {
         type: 'image/jpeg',
       });
 
-      const resp = await fetch('<YOUR_IP_HERE>:8000/parse_receipt/', {
+      const resp = await fetch(`${Config.API_BASE_URL}/parse_receipt`, {
         method: 'POST',
         body: form,
         headers: {
