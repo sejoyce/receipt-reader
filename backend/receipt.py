@@ -4,7 +4,7 @@ from rapidfuzz import process, fuzz
 import re
 import os
 
-from receipt_reader import read_itemlist, fuzzy_correct_text  # assuming your helper functions exist
+from backend.receipt_reader import read_itemlist, fuzzy_correct_text  # assuming your helper functions exist
 
 
 class Receipt:

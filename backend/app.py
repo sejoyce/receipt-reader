@@ -1,9 +1,9 @@
-from receipt import Receipt
+from backend.receipt import Receipt
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import shutil
 import os
-from receipt_reader import read_itemlist
+from backend.receipt_reader import read_itemlist
 from io import BytesIO
 
 app = FastAPI()
