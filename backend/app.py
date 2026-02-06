@@ -6,7 +6,11 @@ import os
 from backend.receipt_reader import read_itemlist
 from io import BytesIO
 
-app = FastAPI()
+app = FastAPI(
+    title="Receipt OCR API",
+    version="1.0.0",
+    root_path=""
+)
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 expected_items, _ = read_itemlist()
