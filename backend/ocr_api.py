@@ -1,12 +1,34 @@
 import os
 import requests
+from PIL import Image
 
 OCR_API_KEY = os.environ.get("OCR_API_KEY")
+
+def compress_image_to_limit(file_path: str, max_size_kb=900):
+    img = Image.open(file_path)
+
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+
+    max_width = 1200
+    if img.width > max_width:
+        ratio = max_width / img.width
+        new_size = (max_width, int(img.height * ratio))
+        img = img.resize(new_size, Image.LANCZOS)
+
+    quality = 85
+    img.save(file_path, format="JPEG", quality=quality)
+
+    while os.path.getsize(file_path) > max_size_kb * 1024 and quality > 20:
+        quality -= 5
+        img.save(file_path, format="JPEG", quality=quality)
 
 def run_ocr_with_ocr_space(file_path: str) -> str:
     """
     Uploads an image to OCR.Space and returns the parsed text.
     """
+    compress_image_to_limit(file_path)
+
     with open(file_path, "rb") as f:
         r = requests.post(
             "https://api.ocr.space/parse/image",
