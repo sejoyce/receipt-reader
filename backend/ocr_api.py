@@ -22,6 +22,7 @@ def run_ocr_with_ocr_space(file_path: str) -> str:
         )
 
     result = r.json()
+    print(result)
     if result.get("IsErroredOnProcessing"):
         raise Exception(f"OCR.Space error: {result.get('ErrorMessage')}")
 
