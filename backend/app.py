@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import shutil
 import os
 from backend.receipt_reader import read_itemlist
+from backend.ocr_api import run_ocr_with_ocr_space
 from io import BytesIO
 
 app = FastAPI(
@@ -27,28 +28,23 @@ async def healthcheck():
     }
 
 @app.post("/parse_receipt/")
-async def parse_receipt(file: UploadFile = File(None)):
-    """
-    Receives a receipt image.
-    Accepts:
-      - multipart/form-data (UploadFile)
-      - raw bytes (for testing via Postman binary)
-    """
-    if file is None:
-        return {"error": "No file uploaded. Make sure the key is 'file' in form-data."}
-
-    # Save file temporarily
+async def parse_receipt(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+
+    # Save file
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Parse receipt
-    try:
-        r = Receipt(file_path, expected_items)
-        result = {"lines": r.text, "store": r.store, "date": r.date}
-    except Exception as e:
-        result = {"error": str(e)}
-    finally:
-        os.remove(file_path)
+    # Run OCR through OCR.Space
+    text = run_ocr_with_ocr_space(file_path)
 
-    return result
+    # Pass OCR text to Receipt class
+    receipt = Receipt.from_text(text)
+
+    os.remove(file_path)
+
+    return {
+        "lines": receipt.text,
+        "store": receipt.store,
+        "date": receipt.date
+    }

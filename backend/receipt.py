@@ -8,19 +8,19 @@ from backend.receipt_reader import read_itemlist, fuzzy_correct_text  # assuming
 
 
 class Receipt:
-    def __init__(self, fname: str, expected_items: list[str] = None):
-        """
-        fname: path to receipt image
-        expected_items: list of known product names for fuzzy correction
-        """
-        self.fname = fname
-        self.expected_items = expected_items or []
-        self.text = []
-        self.date = None
-        self.store = None
+    def __init__(self, fname=None, text=None):
+        if text is not None:
+            self.text = text.splitlines()
+            self.store = None
+            self.date = None
+            # you can call methods to extract store/date if needed
+        elif fname is not None:
+            self.fname = fname
+            self.init_read()  # old image reading code
 
-        self.init_read()
-        self.extract_metadata()
+    @classmethod
+    def from_text(cls, text: str):
+        return cls(text=text)
 
     def init_read(self):
         """Load the image, preprocess, run OCR, and optionally apply fuzzy correction."""
