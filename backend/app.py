@@ -40,11 +40,15 @@ async def parse_receipt(file: UploadFile = File(...)):
 
     # Pass OCR text to Receipt class
     receipt = Receipt.from_text(text)
+    receipt.extract_metadata()
+
+    structured = receipt.extract_items()
 
     os.remove(file_path)
 
     return {
-        "lines": receipt.text,
         "store": receipt.store,
-        "date": receipt.date
+        "date": receipt.date,
+        "items": structured["items"],
+        "total": structured["total"]
     }

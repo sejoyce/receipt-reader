@@ -35,6 +35,73 @@ class Receipt:
         if self.text:
             self.store = self.text[0]
 
+    def extract_items(self):
+        """
+        Extract structured item + price pairs from OCR lines.
+        """
+        items = []
+        total = None
+
+        price_pattern = re.compile(r"-?\d+[.,]\d{2}")
+
+        skip_words = [
+            "SAVINGS",
+            "YOU SAVED",
+            "BALANCE DUE",
+            "DISCOVER",
+            "SUBTOTAL",
+            "TAX",
+        ]
+
+        for line in self.text:
+            clean_line = line.strip()
+
+            # Skip empty lines
+            if not clean_line:
+                continue
+
+            # Skip obvious non-item lines
+            if any(word in clean_line.upper() for word in skip_words):
+                continue
+
+            # Find all price-like values
+            prices = price_pattern.findall(clean_line)
+
+            if prices:
+                # Normalize commas to dots
+                prices = [p.replace(",", ".") for p in prices]
+
+                # Last price is usually the item price
+                price = float(prices[-1])
+
+                # Detect total
+                if "BALANCE" in clean_line.upper():
+                    total = price
+                    continue
+
+                # Remove price from name
+                name = price_pattern.sub("", clean_line)
+                name = re.sub(r"[\*\t]", "", name)
+                name = name.strip()
+
+                # Skip negative prices (discount lines)
+                if price < 0:
+                    continue
+
+                # Skip very short names
+                if len(name) < 3:
+                    continue
+
+                items.append({
+                    "name": name,
+                    "price": price
+                })
+
+        return {
+            "items": items,
+            "total": total
+        }
+
     def save_items(self):
         """
         Update ingredient list for fuzzy correction.
