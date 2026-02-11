@@ -43,8 +43,14 @@ def run_ocr_with_ocr_space(file_path: str) -> str:
             }
         )
 
-    result = r.json()
-    print(result)
+    try:
+        result = r.json()
+    except ValueError:
+        raise Exception(f"OCR.Space did not return JSON. Response was:\n{r.text}")
+
+    if not isinstance(result, dict):
+        raise Exception(f"OCR.Space returned unexpected type: {type(result)}\nContent: {result}")
+
     if result.get("IsErroredOnProcessing"):
         raise Exception(f"OCR.Space error: {result.get('ErrorMessage')}")
 

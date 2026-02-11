@@ -63,6 +63,23 @@ def clean_price(raw_price: str) -> float | None:
 
     return price
 
+def split_receipt_text(raw_text: str):
+    """
+    Turn raw OCR text into lines suitable for parsing.
+    Handles both line breaks and tab-delimited single-line receipts.
+    """
+    # Replace multiple spaces with a single tab
+    text = raw_text.replace("  ", "\t")
+
+    # Split on tabs and newlines
+    lines = []
+    for chunk in text.splitlines():
+        for subchunk in chunk.split("\t"):
+            subchunk = subchunk.strip()
+            if subchunk:
+                lines.append(subchunk)
+    return lines
+
 
 def fuzzy_correct_text(ocr_text, expected_words, wholerow = True, threshold=85):
     """

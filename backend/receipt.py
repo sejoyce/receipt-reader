@@ -37,70 +37,73 @@ class Receipt:
 
     def extract_items(self):
         """
-        Extract structured item + price pairs from OCR lines.
+        Extract structured items (name + price) from self.text.
+        Handles:
+          - Regular items: ITEM_NAME 5.69 *
+          - Weighted produce: BANANAS 2.00 Tb @ 0.54/1b 1.08 *
+        Returns a dict with items list and total (if found)
         """
         items = []
         total = None
+        skip_next = False  # flag for multi-line weighted produce
 
-        price_pattern = re.compile(r"-?\d+[.,]\d{2}")
-
-        skip_words = [
-            "SAVINGS",
-            "YOU SAVED",
-            "BALANCE DUE",
-            "DISCOVER",
-            "SUBTOTAL",
-            "TAX",
-        ]
-
-        for line in self.text:
-            clean_line = line.strip()
-
-            # Skip empty lines
-            if not clean_line:
+        for i, line in enumerate(self.text):
+            if skip_next:
+                skip_next = False
                 continue
 
-            # Skip obvious non-item lines
-            if any(word in clean_line.upper() for word in skip_words):
+            line = line.strip()
+            if not line or line.lower() in ("savings", "you saved:"):
                 continue
 
-            # Find all price-like values
-            prices = price_pattern.findall(clean_line)
+            # Check if next line looks like a weighted produce continuation
+            if i + 1 < len(self.text):
+                next_line = self.text[i + 1].strip()
+                if re.search(r"[\d.,]+\s*(Tb|lb|/1b|@)", next_line):
+                    # Merge current line with next line
+                    line += " " + next_line
+                    skip_next = True
 
-            if prices:
-                # Normalize commas to dots
-                prices = [p.replace(",", ".") for p in prices]
+            item = self._parse_item_line(line)
+            if item:
+                items.append(item)
 
-                # Last price is usually the item price
-                price = float(prices[-1])
+            # Try to detect total if it looks like "BALANCE DUE 75.77" etc.
+            if re.search(r"(total|balance|amount due)", line, re.IGNORECASE):
+                numbers = re.findall(r"\d+[.,]?\d*", line)
+                if numbers:
+                    try:
+                        total = float(numbers[-1].replace(",", "."))
+                    except ValueError:
+                        pass
 
-                # Detect total
-                if "BALANCE" in clean_line.upper():
-                    total = price
-                    continue
+        return {"items": items, "total": total}
+    
+    def _parse_item_line(self, line: str):
+        """
+        Parse a single line into {'name': ..., 'price': ...}.
+        Strips out unit markers for weighted produce.
+        """
+        # Extract all numbers
+        numbers = re.findall(r"\d+(?:[.,]\d+)?", line)
+        if not numbers:
+            return None
 
-                # Remove price from name
-                name = price_pattern.sub("", clean_line)
-                name = re.sub(r"[\*\t]", "", name)
-                name = name.strip()
+        # Last number is assumed to be the price
+        raw_price = numbers[-1].replace(",", ".")
+        try:
+            price = float(raw_price)
+        except ValueError:
+            price = None
 
-                # Skip negative prices (discount lines)
-                if price < 0:
-                    continue
+        # Remove numbers and units from name
+        name = re.sub(r"(\d+[.,]?\d*\s*(?:Tb|lb|/1b|@)?)+", "", line)
+        name = name.replace("*", "").strip()
 
-                # Skip very short names
-                if len(name) < 3:
-                    continue
+        if not name:
+            return None
 
-                items.append({
-                    "name": name,
-                    "price": price
-                })
-
-        return {
-            "items": items,
-            "total": total
-        }
+        return {"name": name, "price": price}
 
     def save_items(self):
         """
