@@ -1,5 +1,5 @@
 # receipt-reader
-A React Native mobile app to track your grocery prices
+A React Native mobile app to track your grocery prices across stores through images of receipts
 
 To run the frontend
 > npm start
